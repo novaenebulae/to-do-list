@@ -1,4 +1,3 @@
-
 import java.util.Objects;
 import java.util.UUID;
 
@@ -94,6 +93,5 @@ public class Task {
             ", done='" + getDone() + "'" +
             "}";
     }
-    
         
 }

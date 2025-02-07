@@ -1,20 +1,21 @@
-
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class App {
 
-    private static ArrayList<Task> userTaskList = new ArrayList<>();
-    public static  Scanner in = new Scanner(System.in);
-     
+    static DatabaseAccess dba = DatabaseAccess.getInstance();
+    public static Scanner in = new Scanner(System.in);
+
     public static void main(String[] args) throws Exception {
         clearScreen();
         String[] choices = {"1", "2", "3", "4"};
         String userChoice = "";
-        
+
         System.out.println("TO-DO List");
         System.out.println("Entrez le nom de l'utilisateur : ");
 
@@ -24,92 +25,125 @@ public class App {
                 .password("securepassword")
                 .build();
 
+        dba.addUser(user);
+
         System.out.println(user);
 
-        if(getUserTasks(user) != null) {
-            userTaskList = getUserTasks(user);
-        } else {
-            userTaskList = null;
-        }
-        
+        dba.addTask(new TaskBuilder().setUser(user).setTitle("Task 1").setDescription("Description 1").build());
+        dba.addTask(new TaskBuilder().setUser(user).setTitle("Task 2").setDescription("Description 2").build());
+        dba.addTask(new TaskBuilder().setUser(user).setTitle("Task 3").setDescription("Description 3").build());
+
+        DatedTask task4 = new DatedTask(user, null);
+        task4.setTitle("Task 4");
+        task4.setDescription("Description 4");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+        task4.setDueDate(formatter.parse("01/01/2025"));
+        dba.addTask(task4);
+
         while (!"4".equals(userChoice)) {
             clearScreen();
-            System.out.println("1. Liste tache\n2. Ajouter tache\n3. Supprimer tache\n4. Quitter");
+            System.out.println("=== TO-DO List de " + user.getFirstname() + " ===");
+            System.out.println("\n1. Liste des tâches\n2. Ajouter tâche\n3. Supprimer tâche\n4. Quitter");
             userChoice = in.nextLine();
+
             if (!Arrays.asList(choices).contains(userChoice)) {
                 System.out.println("Erreur : entrez un chiffre entre 1 et 4");
             } else {
+                clearScreen();
                 switch (userChoice) {
-                    case "1" -> {showTasks(getUserTasks(user)); System.out.println("Appuyez sur une touche pour continuer..."); in.nextLine();}
+                    case "1" -> {
+                        showTasks(user);
+                        System.out.println("Appuyez sur une touche pour continuer...");
+                        in.nextLine();
+                    }
                     case "2" -> addTask(user);
-                    case "3" -> deleteTask(userTaskList);
+                    case "3" -> deleteTask(user);
                 }
             }
-            
         }
 
         clearScreen();
         in.close();
-
     }
 
     public static void clearScreen() {
-        System.out.print("\033[H\033[2J");  
-        System.out.flush();  
+        System.out.print("\033[H\033[2J");
+        System.out.flush();
     }
 
     public static ArrayList<Task> getUserTasks(User user) {
-    
-        ArrayList<Task> userTasks = new ArrayList<>();
+        return new ArrayList<>(dba.getUserTasks(user));
+    }
 
-        for (Task task : userTaskList) {
-            if (((Task) task).getUserId().equals(user.getId())) {
-                userTasks.add(task);
+    public static ArrayList<Task> filterUserTasks(ArrayList<Task> userTaskList, String param) {
+        return switch (param) {
+            case "all" -> userTaskList;
+            case "notDone" -> userTaskList.stream()
+                    .filter(task -> !task.getDone())
+                    .collect(Collectors.toCollection(ArrayList::new));
+            case "done" -> userTaskList.stream()
+                    .filter(Task::getDone)
+                    .collect(Collectors.toCollection(ArrayList::new));
+            default -> throw new AssertionError();
+        };
+    }
+
+    public static void showTasks(User user) {
+        ArrayList<Task> userTaskList;
+        int index = 0;
+        String[] choices = {"1", "2", "3", "4"};
+
+        System.out.println("=== TÂCHES ===");
+        System.out.println("\n1. Toutes les tâches\n2. Tâches non réalisées\n3. Tâches réalisées\n4. Retour");
+        String userChoice = in.nextLine();
+
+        if (!Arrays.asList(choices).contains(userChoice)) {
+            System.out.println("Erreur : entrez un chiffre entre 1 et 4");
+            return;
+        }
+
+        switch (userChoice) {
+            case "1" -> userTaskList = filterUserTasks(getUserTasks(user), "all");
+            case "2" -> userTaskList = filterUserTasks(getUserTasks(user), "notDone");
+            case "3" -> userTaskList = filterUserTasks(getUserTasks(user), "done");
+            default -> {
+                return;
             }
         }
 
-        return userTasks;
-    }
-
-    public static void showTasks(ArrayList<Task> userTaskList) {
-        int index = 0;
-        App.clearScreen();
-        System.out.println("=== TACHES ===\n");
+        clearScreen();
+        System.out.println("=== TÂCHES ===\n");
 
         if (userTaskList.isEmpty()) {
-            System.out.println("La liste des taches est vide !\n");
+            System.out.println("La liste des tâches est vide !\n");
         } else {
             for (Task task : userTaskList) {
-
-                System.out.println((index + 1 ) + ". " + ((Task) task).getTitle());
-                System.out.println("Description : " + ((Task) task).getDescription());
-                System.out.println("Done : " + ((Task) task).getDone() + "\n");
-
+                System.out.println((index + 1) + ". " + task.getTitle());
+                System.out.println("Description : " + task.getDescription());
+                System.out.println("Done : " + task.getDone() + "\n");
                 index++;
-        
             }
         }
-        
     }
 
-    public static void addTask(User thisUser) throws Exception {
-            App.clearScreen();
-            System.out.println("=== AJOUT TACHE ===");
-            System.out.println("\nEntrez le titre de la nouvelle tache : ");
-            String thisTaskTitle = in.nextLine();
-            System.out.println("\nEntrez la description de la nouvelle tache : ");
-            String thisTaskDescription = in.nextLine();
-    
-            Task task = new Task(thisUser, thisTaskTitle, thisTaskDescription);
-            userTaskList.add(task); 
-            System.out.println("\nTache ajoutée avec succès !");
-            TimeUnit.SECONDS.sleep(1);
+    public static void addTask(User user) throws Exception {
+        clearScreen();
+        System.out.println("=== AJOUT TÂCHE ===");
+        System.out.println("\nEntrez le titre de la nouvelle tâche : ");
+        String title = in.nextLine();
+        System.out.println("\nEntrez la description de la nouvelle tâche : ");
+        String description = in.nextLine();
+
+        Task task = new Task(user, title, description);
+        dba.addTask(task);
+        System.out.println("\nTâche ajoutée avec succès !");
+        TimeUnit.SECONDS.sleep(1);
     }
-    
-    public static void deleteTask(ArrayList<Task> userTaskList) throws Exception {
+
+    public static void deleteTask(User user) throws Exception {
         int indexTask = -1;
+        ArrayList<Task> userTaskList = getUserTasks(user);
 
-        // Vérifier si l'utilisateur a des tâches
         if (userTaskList.isEmpty()) {
             System.out.println("\nAucune tâche à supprimer !");
             TimeUnit.SECONDS.sleep(1);
@@ -118,32 +152,29 @@ public class App {
 
         while (indexTask < 1 || indexTask > userTaskList.size()) {
             try {
-                App.clearScreen();
-                showTasks(userTaskList);
-                System.out.println("=== SUPPRESSION TACHE ===");
+                clearScreen();
+                System.out.println("=== SUPPRESSION TÂCHE ===\n");
+                System.out.println("Filtre d'affichage : \n");
+                showTasks(user);
                 System.out.println("\nEntrez l'index de la tâche à supprimer : ");
-                indexTask = in.nextInt(); // Lire l'entrée
+                indexTask = in.nextInt();
+                in.nextLine(); // Nettoyer le buffer
 
-                // Nettoyer le buffer après nextInt()
-                in.nextLine(); 
-
-                if (indexTask >= 1 && indexTask <= userTaskList.size()) { // Correction de la condition
+                if (indexTask >= 1 && indexTask <= userTaskList.size()) {
                     Task task = userTaskList.get(indexTask - 1);
-                    userTaskList.remove(task);
+                    dba.deleteTask(task);
                     System.out.println("\nLa tâche a été supprimée avec succès !");
                     break;
                 } else {
                     System.out.println("\nErreur : entrez un nombre entre 1 et " + userTaskList.size());
-                    indexTask = -1; // Réinitialisation pour relancer la boucle
+                    indexTask = -1;
                 }
             } catch (InputMismatchException e) {
                 System.out.println("\nErreur : entrez un nombre entier.");
-                in.nextLine(); // Vider le buffer pour éviter une boucle infinie
+                in.nextLine(); // Vider le buffer
                 indexTask = -1;
             }
-
-            TimeUnit.SECONDS.sleep(1);
         }
+        TimeUnit.SECONDS.sleep(1);
     }
-    
 }

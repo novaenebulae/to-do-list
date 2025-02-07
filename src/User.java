@@ -3,9 +3,9 @@ import java.util.UUID;
 
 public class User {
     private final String id;
-    private String firstname;
-    private String username;
-    private String password; // Stockage sécurisé nécessaire en prod
+    private final String firstname;
+    private final String username;
+    private final String password; // Stockage sécurisé nécessaire en prod
 
     // Bloc d'initialisation pour générer un UUID automatiquement
     {
