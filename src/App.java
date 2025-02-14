@@ -43,7 +43,7 @@ public class App {
         while (!"4".equals(userChoice)) {
             clearScreen();
             System.out.println("=== TO-DO List de " + user.getFirstname() + " ===");
-            System.out.println("\n1. Liste des tâches\n2. Ajouter tâche\n3. Supprimer tâche\n4. Quitter");
+            System.out.println("\n1. Liste des tâches\n2. Ajouter tâche\n3. Modifier tâche\n4. Quitter");
             userChoice = in.nextLine();
 
             if (!Arrays.asList(choices).contains(userChoice)) {
@@ -57,7 +57,7 @@ public class App {
                         in.nextLine();
                     }
                     case "2" -> addTask(user);
-                    case "3" -> deleteTask(user);
+                    case "3" -> modifyTaskList(user);
                 }
             }
         }
@@ -91,13 +91,13 @@ public class App {
     public static void showTasks(User user) {
         ArrayList<Task> userTaskList;
         int index = 0;
-        String[] choices = {"1", "2", "3", "4"};
+        String[] validChoices = {"1", "2", "3", "4"};
 
         System.out.println("=== TÂCHES ===");
         System.out.println("\n1. Toutes les tâches\n2. Tâches non réalisées\n3. Tâches réalisées\n4. Retour");
         String userChoice = in.nextLine();
 
-        if (!Arrays.asList(choices).contains(userChoice)) {
+        if (!Arrays.asList(validChoices).contains(userChoice)) {
             System.out.println("Erreur : entrez un chiffre entre 1 et 4");
             return;
         }
@@ -126,6 +126,12 @@ public class App {
         }
     }
 
+    public static void showUniqueTask(Task task, int index) {
+        System.out.println("Titre : " + task.getTitle());
+        System.out.println("Description : " + task.getDescription());
+        System.out.println("Done : " + task.getDone() + "\n");
+    }
+
     public static void addTask(User user) throws Exception {
         clearScreen();
         System.out.println("=== AJOUT TÂCHE ===");
@@ -140,12 +146,17 @@ public class App {
         TimeUnit.SECONDS.sleep(1);
     }
 
-    public static void deleteTask(User user) throws Exception {
+    public static void editTask(task) {
+        System.out.print("Entrez le nouveau titre : ");
+        String title = 
+    }
+
+    public static void modifyTaskList(User user) throws Exception {
         int indexTask = -1;
         ArrayList<Task> userTaskList = getUserTasks(user);
 
         if (userTaskList.isEmpty()) {
-            System.out.println("\nAucune tâche à supprimer !");
+            System.out.println("\nAucune tâche à afficher !");
             TimeUnit.SECONDS.sleep(1);
             return;
         }
@@ -153,17 +164,36 @@ public class App {
         while (indexTask < 1 || indexTask > userTaskList.size()) {
             try {
                 clearScreen();
-                System.out.println("=== SUPPRESSION TÂCHE ===\n");
+                System.out.println("=== ÉDITION TÂCHE ===\n");
                 System.out.println("Filtre d'affichage : \n");
                 showTasks(user);
-                System.out.println("\nEntrez l'index de la tâche à supprimer : ");
+                System.out.println("\nEntrez l'index de la tâche à éditer : ");
                 indexTask = in.nextInt();
                 in.nextLine(); // Nettoyer le buffer
 
                 if (indexTask >= 1 && indexTask <= userTaskList.size()) {
                     Task task = userTaskList.get(indexTask - 1);
-                    dba.deleteTask(task);
-                    System.out.println("\nLa tâche a été supprimée avec succès !");
+
+                    clearScreen();
+                    System.out.println("=== TÂCHE SÉLECTIONNÉE ===\n");
+                    showUniqueTask(task);
+
+                    String[] validChoices = {"1", "2", "3"};
+                    System.out.println("\n1. Modifier\n2. Supprimer\n3. Retour");
+                    String userChoice = in.nextLine();
+
+                    if (!Arrays.asList(validChoices).contains(userChoice)) {
+                        System.out.println("Erreur : entrez un 1, 2 ou 3");
+                        return;
+                    }
+
+                    switch (userChoice) {
+                        case "1" -> editTask(task);
+                        case "2" -> dba.deleteTask(task);
+                        default -> {
+                            return;
+            }
+        }
                     break;
                 } else {
                     System.out.println("\nErreur : entrez un nombre entre 1 et " + userTaskList.size());

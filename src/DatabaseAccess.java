@@ -7,8 +7,8 @@ public class DatabaseAccess {
     private static DatabaseAccess instance;
 
     // Listes simulant une base de données
-    private ArrayList<User> users;
-    private ArrayList<Task> tasks;
+    private final ArrayList<User> users;
+    private final ArrayList<Task> tasks;
 
     // Constructeur privé pour empêcher l'instanciation directe
     private DatabaseAccess() {
@@ -44,6 +44,7 @@ public class DatabaseAccess {
 
     public void deleteTask(Task task) {
         tasks.remove(task);
+        System.out.println("\nLa tâche a été supprimée avec succès !");
     }
     
     public ArrayList<Task> getUserTasks(User user) {
